@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/kooroshh/fiber-boostrap/app/models"
+	"github.com/kooroshh/fiber-boostrap/pkg/env"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -15,17 +15,12 @@ import (
 func SetupDatabase() {
 	var err error
 
-	err = godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-	user := os.Getenv("DB_USER")
-	pwd := os.Getenv("DB_PASSWORD")
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	dbName := os.Getenv("DB_NAME")
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, pwd, host, port, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		env.GetEnv("DB_USER", ""),
+		env.GetEnv("DB_PASSWORD", ""),
+		env.GetEnv("DB_HOST", ""),
+		env.GetEnv("DB_PORT", ""),
+		env.GetEnv("DB_NAME", ""))
 
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -33,7 +28,12 @@ func SetupDatabase() {
 		os.Exit(1)
 	}
 
-	DB.AutoMigrate(&models.User{})
-
 	DB.Logger = logger.Default.LogMode(logger.Info)
+
+	err = DB.AutoMigrate(&models.User{}, &models.UserSession{})
+	if err != nil {
+		log.Fatal("failed to migrate database: ", err)
+	}
+
+	fmt.Println("successfully migrate database!")
 }
