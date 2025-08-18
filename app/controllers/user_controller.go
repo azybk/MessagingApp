@@ -54,7 +54,7 @@ func Login(ctx *fiber.Ctx) error {
 	loginReq := new(models.LoginRequest)
 
 	resp := models.LoginResponse{}
-	
+
 	err := ctx.BodyParser(loginReq)
 	if err != nil {
 		errResponse := fmt.Errorf("failed to parse request: %v", err)
@@ -98,10 +98,10 @@ func Login(ctx *fiber.Ctx) error {
 	}
 
 	userSession := &models.UserSession{
-		UserID: int(user.ID),        
-		Token: token,               
-		RefreshToken: refreshToken,        
-		TokenExpired: time.Now().Add(jwt_token.MapTypeToken["token"]),
+		UserID:              int(user.ID),
+		Token:               token,
+		RefreshToken:        refreshToken,
+		TokenExpired:        time.Now().Add(jwt_token.MapTypeToken["token"]),
 		RefreshTokenExpired: time.Now().Add(jwt_token.MapTypeToken["refresh_token"]),
 	}
 
@@ -118,4 +118,16 @@ func Login(ctx *fiber.Ctx) error {
 	resp.RefreshToken = refreshToken
 
 	return response.SendSuccessResponse(ctx, resp)
+}
+
+func Logout(ctx *fiber.Ctx) error {
+	token := ctx.Get("Authorization")
+	err := repository.DeleteUserSessionByToken(ctx.Context(), token)
+	if err != nil {
+		errResponse := fmt.Errorf("failed delete user session: %v", err)
+		fmt.Println(errResponse)
+		return response.SendFailureResponse(ctx, fiber.StatusInternalServerError, "terjadi kesalahan pada sistem", nil)
+	}
+
+	return response.SendSuccessResponse(ctx, nil)
 }
