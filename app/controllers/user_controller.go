@@ -131,3 +131,28 @@ func Logout(ctx *fiber.Ctx) error {
 
 	return response.SendSuccessResponse(ctx, nil)
 }
+
+func RefreshToken(ctx *fiber.Ctx) error {
+	refreshToken := ctx.Get("Authorization")
+
+	username := ctx.Locals("username").(string)
+	fullName := ctx.Locals("full_name").(string)
+
+	token, err := jwt_token.GenerateToken(ctx.Context(), username, fullName, "token")
+	if err != nil {
+		errResponse := fmt.Errorf("failed to generate token: %v", err)
+		fmt.Println(errResponse)
+		return response.SendFailureResponse(ctx, fiber.StatusNotFound, "terjadi kesalahan pada sistem", nil)
+	}
+
+	err = repository.UpdateUserSessionToken(ctx.Context(), token, time.Now().Add(jwt_token.MapTypeToken["token"]), refreshToken)
+	if err != nil {
+		errResponse := fmt.Errorf("failed to generate token: %v", err)
+		fmt.Println(errResponse)
+		return response.SendFailureResponse(ctx, fiber.StatusNotFound, "terjadi kesalahan pada sistem", nil)
+	}
+
+	return response.SendSuccessResponse(ctx, fiber.Map{
+		"token": token,
+	})
+}
