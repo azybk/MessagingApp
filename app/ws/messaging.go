@@ -15,10 +15,10 @@ type MessagePayload struct {
 }
 
 func ServeWSMessaging(app *fiber.App) {
-	var clients = make(map[*websocket.Conn]bool)
-	var broadcast = make(chan MessagePayload)
+	clients := make(map[*websocket.Conn]bool)
+	broadcast := make(chan MessagePayload)
 
-	app.Get("/message/v1/send", websocket.New(func(c *websocket.Conn) {
+	app.Get("message/v1/send", websocket.New(func(c *websocket.Conn) {
 		defer func() {
 			c.Close()
 			delete(clients, c)
@@ -29,7 +29,7 @@ func ServeWSMessaging(app *fiber.App) {
 		for {
 			var msg MessagePayload
 			if err := c.ReadJSON(&msg); err != nil {
-				fmt.Println("error payload", err)
+				fmt.Println("error payload: ", err)
 				break
 			}
 
@@ -43,7 +43,7 @@ func ServeWSMessaging(app *fiber.App) {
 			for client := range clients {
 				err := client.WriteJSON(msg)
 				if err != nil {
-					fmt.Println("failed to write JSON:", err)
+					fmt.Println("error write to json: ", err)
 					client.Close()
 					delete(clients, client)
 				}
@@ -52,5 +52,4 @@ func ServeWSMessaging(app *fiber.App) {
 	}()
 
 	log.Fatal(app.Listen(fmt.Sprintf("%s:%s", env.GetEnv("APP_HOST", "localhost"), env.GetEnv("APP_PORT_SOCKET", "8080"))))
-
 }
